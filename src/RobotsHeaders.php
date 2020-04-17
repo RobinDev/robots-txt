@@ -41,12 +41,40 @@ class RobotsHeaders
 
     public function noindex(string $userAgent = '*'): bool
     {
+        return
+            // 1. We check for the suggested user-agent
+            $this->robotHeadersProperties[$userAgent]['noindex']
+            // 2. We check for the user-agent + wildcard (except if ua is *)
+            ?? $this->robotHeadersProperties[$this->getWildCardUserAgent($userAgent)]['noindex']
+            // 3. We check for all user-agent
+            ?? $this->robotHeadersProperties['*']['noindex']
+            // 4. noindex doesn't exist, we can go :)
+            ?? false;
+
         return $this->robotHeadersProperties[$userAgent]['noindex'] ?? false;
     }
 
     public function nofollow(string $userAgent = '*'): bool
     {
-        return $this->robotHeadersProperties[$userAgent]['nofollow'] ?? false;
+        return
+            $this->robotHeadersProperties[$userAgent]['nofollow']
+            ?? $this->robotHeadersProperties[$this->getWildCardUserAgent($userAgent)]['nofollow']
+            ?? $this->robotHeadersProperties['*']['nofollow']
+            ?? false;
+    }
+
+    protected function getWildCardUserAgent(string $userAgent): ?string
+    {
+        if ($userAgent !== '*') {
+            for ($i = 1; $i <= strlen($userAgent); $i++) {
+                $wildCardUserAgent = substr($userAgent, 0, $i).'*';
+                if (isset($this->robotHeadersProperties[$wildCardUserAgent])) {
+                    return $wildCardUserAgent;
+                }
+            }
+        }
+
+        return null;
     }
 
     protected function parseHeaders(array $headers): array
